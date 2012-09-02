@@ -22,6 +22,9 @@ class action_plugin_simpleperms extends DokuWiki_Action_Plugin {
 
 		# For adding simple permissions to the edit form
 		$controller->register_hook('HTML_EDITFORM_OUTPUT', 'BEFORE', $this, 'insert_dropdown', array());
+
+		# Restrict access to editing page
+		$controller->register_hook('ACTION_ACT_PREPROCESS', 'BEFORE', $this, 'restrict_editing', array());
 		
 		# For saving the simple permissions
 		$controller->register_hook('IO_WIKIPAGE_WRITE', 'AFTER', $this, 'add_metadata', array());
@@ -50,6 +53,21 @@ EOF
 		$event->data->insertElement($pos++,$out);
 	}
 
+	function restrict_editing( &$event, $param ) {
+
+		global $ACT;
+
+		if ( $ACT != 'save' )
+			return; # wat the?
+
+		# Only author can edit private pages
+		if ( $this->_private() && !$this->_user_is_creator() )
+			$event->preventDefault();
+
+		# Public can edit if they have permission
+		if ( !$this->_public_can_edit() )
+			$event->preventDefault();
+	}
 
 	/**
 	 * Adds the simpleperm metadata to the page
