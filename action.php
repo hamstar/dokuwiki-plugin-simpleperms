@@ -25,6 +25,9 @@ class action_plugin_simpleperms extends DokuWiki_Action_Plugin {
 		
 		# For saving the simple permissions
 		$controller->register_hook('IO_WIKIPAGE_WRITE', 'AFTER', $this, 'add_metadata', array());
+		
+		# For checking permissions before opening
+		$controller->register_hook('TPL_CONTENT_DISPLAY', 'BEFORE', $this, 'block_if_private_page', array());
 	}
 
 	function insert_dropdown(&$event, $param) {
@@ -94,6 +97,18 @@ EOF
 		}
 
 		p_set_metadata( $ID, $data );
+	}
+
+	/**
+	 * Doesn't allow the page to be viewed if its private
+	 */
+	function block_if_private_page( &$event, $param ) {
+
+		global $INFO;
+
+		# Its a private page and user not author, block access
+		if ( $this->_private() && !$this->_user_is_creator() )
+			$this->event->preventDefault();
 	}
 	/**
 	 * @return true if public can edit
