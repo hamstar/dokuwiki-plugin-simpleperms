@@ -22,6 +22,9 @@ class action_plugin_simpleperms extends DokuWiki_Action_Plugin {
 
 		# For adding simple permissions to the edit form
 		$controller->register_hook('HTML_EDITFORM_OUTPUT', 'BEFORE', $this, 'insert_dropdown', array());
+		
+		# For saving the simple permissions
+		$controller->register_hook('IO_WIKIPAGE_WRITE', 'AFTER', $this, 'add_metadata', array());
 	}
 
 	function insert_dropdown(&$event, $param) {
@@ -41,6 +44,57 @@ EOF
 		$event->data->insertElement($pos++,$out);
 	}
 
+
+	/**
+	 * Adds the simpleperm metadata to the page
+	 * Ensures only the author can do this
+	 */
+	function add_metadata( &$event, $param ) {
+
+		global $ACT;
+		global $INPUT;
+		global $ID;
+
+		# Check it is a save operation
+		if ( $ACT != "save" )
+			return; # what the?
+
+		# don't add perms if not author
+		if ( !$this->_user_is_creator() )
+			return;
+
+		# Check if the simpleperm value was given in the request
+		if ( !$INPUT->post->has('simpleperm') )
+			return; # hmmm.. select must not have gone on the page
+
+		# set the perms
+		switch ( $INPUT->post->int('simpleperm') ) {
+		case 0:
+			$data = array(
+				'public_rw' => false,
+				'public_r' => true,
+				'private' => false
+			);
+			break;
+		case 1:
+			$data = array(
+				'public_rw' => true,
+				'public_r' => true,
+				'private' => false
+			);
+			break;
+		case -1:
+		default:
+			$data = array(
+				'public_rw' => false,
+				'public_r' => false,
+				'private' => true
+			);
+			break;
+		}
+
+		p_set_metadata( $ID, $data );
+	}
 	/**
 	 * @return true if public can edit
 	 */
