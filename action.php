@@ -36,7 +36,15 @@ class action_plugin_simpleperms extends DokuWiki_Action_Plugin {
 		$controller->register_hook('TPL_CONTENT_DISPLAY', 'BEFORE', $this, 'hide_edit_button', array());
 	}
 
+	/**
+	 * Insert the select element into the page
+	 */
 	function insert_dropdown(&$event, $param) {
+		
+		# don't add perms select if not author
+		if ( !$this->_user_is_creator() )
+			return;
+
 		$pos = $event->data->findElementByAttribute('class','summary');
 
 		# note: default is private
