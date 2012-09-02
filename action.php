@@ -40,4 +40,44 @@ EOF
 
 		$event->data->insertElement($pos++,$out);
 	}
+
+	/**
+	 * @return true if public can edit
+	 */
+	function _public_can_edit() {
+
+		global $INFO;
+
+		return $INFO['meta']['public_rw'];
+	}
+
+	/**
+	 * @return true if public can read
+	 */
+	function _public_can_read() {
+
+		global $INFO;
+
+		return $INFO['meta']['public_r'];
+	}
+
+	/**
+	 * @return true if private
+	 */
+	function _private() {
+
+		global $INFO;
+
+		return $INFO['meta']['private'];
+	}
+
+	/**
+	 * @return true if the current user is creator
+	 */
+	function _user_is_creator() {
+
+		global $INFO;
+
+		return ( $INFO['meta']['creator'] == $INFO['userinfo']['name'] );
+	}
 }
