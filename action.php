@@ -19,15 +19,24 @@ class action_plugin_simpleperms extends DokuWiki_Action_Plugin {
 	* Registers a callback function for a given event
 	*/
 	function register(&$controller) {
+
+		# For adding simple permissions to the edit form
 		$controller->register_hook('HTML_EDITFORM_OUTPUT', 'BEFORE', $this, 'insert_dropdown', array());
 	}
 
 	function insert_dropdown(&$event, $param) {
 		$pos = $event->data->findElementByAttribute('class','summary');
 
-		$out = '<div class="summary" style="margin-right: 10px;">';
-		$out.= 'Permissions: <select><option>Private</option><option>Public Edit</option><option>Public Read</option></select> ';
-		$out.= '</div>';
+		# note: default is private
+		$out = <<<EOF
+<div class="summary" style="margin-right: 10px;">"
+	<span>Permissions: <select name="simpleperm">
+		<option value="-1">Private</option>
+		<option value="0">Public Read</option>
+		<option value="1">Public Edit</option>
+	</select></span>
+</div>
+EOF
 
 		$event->data->insertElement($pos++,$out);
 	}
