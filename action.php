@@ -28,6 +28,9 @@ class action_plugin_simpleperms extends DokuWiki_Action_Plugin {
 		
 		# For checking permissions before opening
 		$controller->register_hook('TPL_CONTENT_DISPLAY', 'BEFORE', $this, 'block_if_private_page', array());
+
+		# Hide edit button where applicable
+		$controller->register_hook('TPL_CONTENT_DISPLAY', 'BEFORE', $this, 'hide_edit_button', array());
 	}
 
 	function insert_dropdown(&$event, $param) {
@@ -110,6 +113,24 @@ EOF
 		if ( $this->_private() && !$this->_user_is_creator() )
 			$this->event->preventDefault();
 	}
+
+	/**
+	 * Hides the edit button if the user only has read perms
+	 */
+	function hide_edit_button( &$event, $param ) {
+
+		global $INFO;
+
+		if ( $this->_user_is_creator() )
+			return;
+
+		if ( $this->_public_can_edit() )
+			return;
+
+		$edit_button = '<input type="submit" value="Edit this page" class="button" accesskey="e" title="Edit this page [E]" />';
+		$event->data = str_replace( $edit_button, "", $event->data, 
+	}
+
 	/**
 	 * @return true if public can edit
 	 */
