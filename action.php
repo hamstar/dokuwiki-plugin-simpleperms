@@ -102,8 +102,6 @@ class action_plugin_simpleperms extends DokuWiki_Action_Plugin {
 	 */
 	function block_if_private_page( &$event, $param ) {
 
-		global $INFO;
-
 		# Its a private page and user not author, block access
 		if ( $this->_private() && !$this->_user_is_creator() )
 			$this->event->preventDefault();
@@ -114,8 +112,8 @@ class action_plugin_simpleperms extends DokuWiki_Action_Plugin {
 	 */
 	function hide_edit_button( &$event, $param ) {
 
-		global $INFO;
-
+		$this->_check_metadata_exists(); # this should modify $INFO if it doesn't already have simpleperm metadata
+		
 		if ( $this->_user_is_creator() )
 			return;
 
@@ -124,6 +122,34 @@ class action_plugin_simpleperms extends DokuWiki_Action_Plugin {
 
 		$edit_button = '<input type="submit" value="Edit this page" class="button" accesskey="e" title="Edit this page [E]" />';
 		$event->data = str_replace( $edit_button, "", $event->data, 
+	}
+
+	/**
+	 * TODO: test that this method works as expected
+	 * Make sure methods that use the metadata get the right INFO[meta]
+	 * array after calling this on a previously unrestricted page
+	 */
+	function _check_metadata_exists() {
+
+		global $INFO;
+		global $ID;
+
+		if ( 
+			!isset($INFO['meta']['public_rw']) || 
+			!isset($INFO['meta']['public_r']) || 
+			!isset($INFO['meta']['private']) )
+		) {
+			# Metadata not set
+			$data = array(
+				'public_rw' => false,
+				'public_r' => false,
+				'private' => true
+			);
+
+			p_set_metadata( $ID, $data );
+			$INFO['meta'] = p_get_metadata( $ID, array(), true );
+		}
+
 	}
 
 	/**
