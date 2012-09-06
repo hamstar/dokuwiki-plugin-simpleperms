@@ -51,6 +51,9 @@ class action_plugin_simpleperms extends DokuWiki_Action_Plugin {
 		$event->data->insertElement($pos++,$dropdown);
 	}
 
+	/**
+	 * Restricts editing of pages where needed
+	 */
 	function restrict_editing( &$event, $param ) {
 
 		global $ACT;
@@ -89,32 +92,8 @@ class action_plugin_simpleperms extends DokuWiki_Action_Plugin {
 		if ( !$INPUT->post->has('simpleperm') )
 			return; # hmmm.. select must not have gone on the page
 
-		# set the perms
-		switch ( $INPUT->post->int('simpleperm') ) {
-		case 0:
-			$data = array(
-				'public_rw' => false,
-				'public_r' => true,
-				'private' => false
-			);
-			break;
-		case 1:
-			$data = array(
-				'public_rw' => true,
-				'public_r' => true,
-				'private' => false
-			);
-			break;
-		case -1:
-		default:
-			$data = array(
-				'public_rw' => false,
-				'public_r' => false,
-				'private' => true
-			);
-			break;
-		}
-
+		# Generate and set the metadata
+		$data = $this->_generate_metadata( $INPUT->post->int('simpleperm') );
 		p_set_metadata( $ID, $data );
 	}
 
@@ -232,5 +211,39 @@ class action_plugin_simpleperms extends DokuWiki_Action_Plugin {
 EOF;
 
 		return $out;
+	}
+
+	/**
+	 * @return array of metadata describing the simple permissions
+	 */
+	function _generate_metadata( $sp ) {
+		
+		# set the perms
+		switch ( $sp ) {
+		case 0: # public read 010/2
+			$data = array(
+				'public_rw' => false,
+				'public_r' => true,
+				'private' => false
+			);
+			break;
+		case 1: # public edit 011/3
+			$data = array(
+				'public_rw' => true,
+				'public_r' => true,
+				'private' => false
+			);
+			break;
+		case -1: # private 100/4
+		default:
+			$data = array(
+				'public_rw' => false,
+				'public_r' => false,
+				'private' => true
+			);
+			break;
+		}
+
+		return $data;
 	}
 }
