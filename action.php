@@ -40,25 +40,15 @@ class action_plugin_simpleperms extends DokuWiki_Action_Plugin {
 	 * Insert the select element into the page
 	 */
 	function insert_dropdown(&$event, $param) {
-		
+
 		# don't add perms select if not author
 		if ( !$this->_user_is_creator() )
 			return;
 
 		$pos = $event->data->findElementByAttribute('class','summary');
 
-		# note: default is private
-		$out = <<<EOF
-<div class="summary" style="margin-right: 10px;">"
-	<span>Permissions: <select name="simpleperm">
-		<option value="-1">Private</option>
-		<option value="0">Public Read</option>
-		<option value="1">Public Edit</option>
-	</select></span>
-</div>
-EOF
-
-		$event->data->insertElement($pos++,$out);
+		$dropdown = $this->_generate_dropdown();
+		$event->data->insertElement($pos++,$dropdown);
 	}
 
 	function restrict_editing( &$event, $param ) {
@@ -195,5 +185,52 @@ EOF
 		global $INFO;
 
 		return ( $INFO['meta']['creator'] == $INFO['userinfo']['name'] );
+	}
+
+	/**
+	 * @return the html for the dropdown permissions selection
+	 */
+	function _generate_dropdown() {
+
+		global $INFO;
+		$m = $INFO['meta'];
+
+		# Build a permissions matrix
+		$perms = ((int)$m['private']) . ((int)$m['public_r']) . ((int)$m['public_rw'])
+
+		# Set default text for each selected
+		list( 
+			$private_selected,
+			$public_r_selected,
+			$public_rw_selected
+		) = array("", "", "");
+
+		# Match the matrix against the 
+		switch ( $perms ) {
+			case "011":
+			case "001"
+				$public_rw_selected = " selected";
+				break;
+			case "010":
+				$public_r_selected = " selected";
+				break;
+			case "100":
+			default:
+				$private_selected = " selected";
+				break;
+		}
+
+		# note: default is private
+		$out = <<<EOF
+		<div class="summary" style="margin-right: 10px;">"
+			<span>Permissions: <select name="simpleperm">
+				<option value="-1"$private_selected>Private</option>
+				<option value="0"$public_r_selected>Public Read</option>
+				<option value="1"$public_rw_selected>Public Edit</option>
+			</select></span>
+		</div>
+EOF;
+
+		return $out;
 	}
 }
