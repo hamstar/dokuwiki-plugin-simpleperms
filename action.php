@@ -5,6 +5,7 @@
  *
  * @license    WTFPL 2 (http://sam.zoy.org/wtfpl/)
  * @author     Robert Mcleod <hamstar@telescum.co.nz>
+ * @modified   Bhavic Patel <bhavic@hides.me>
  */
 // must be run within Dokuwiki
 if(!defined('DOKU_INC')) die();
