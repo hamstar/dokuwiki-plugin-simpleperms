@@ -1,4 +1,5 @@
 <?php
+error_reporting(E_ERROR | E_WARNING | E_PARSE);
 /**
  * Proof of concept plugin for simple per page  permissions
  * in dokuwiki
@@ -15,7 +16,8 @@ if(!defined('DOKU_INC')) die();
  * need to inherit from this class
  */
 class action_plugin_simpleperms extends DokuWiki_Action_Plugin {
-
+	
+	
 	/**
 	* Registers a callback function for a given event
 	*/
@@ -35,14 +37,16 @@ class action_plugin_simpleperms extends DokuWiki_Action_Plugin {
 
 		# Hide edit button where applicable
 		$controller->register_hook('TPL_CONTENT_DISPLAY', 'BEFORE', $this, 'hide_edit_button', array());
+		
 	}
 
+	
 	/**
 	 * Insert the select element into the page
 	 */
 	function insert_dropdown(&$event, $param) {
 
-		# don't add perms select if not author
+		/*# don't add perms select if not author
 		if ( !$this->_user_is_creator() )
 			return;
 
@@ -50,8 +54,9 @@ class action_plugin_simpleperms extends DokuWiki_Action_Plugin {
 
 		$dropdown = $this->_generate_dropdown();
 		$event->data->insertElement($pos++,$dropdown);
+		*/
 	}
-
+	
 	/**
 	 * Restricts editing of pages where needed
 	 */
@@ -97,7 +102,7 @@ class action_plugin_simpleperms extends DokuWiki_Action_Plugin {
 		$data = $this->_generate_metadata( $INPUT->post->int('simpleperm') );
 		p_set_metadata( $ID, $data );
 	}
-
+	
 	/**
 	 * Doesn't allow the page to be viewed if its private
 	 */
@@ -122,9 +127,8 @@ class action_plugin_simpleperms extends DokuWiki_Action_Plugin {
 			return;
 
 		$edit_button = '<input type="submit" value="Edit this page" class="button" accesskey="e" title="Edit this page [E]" />';
-		$event->data = str_replace( $edit_button, "", $event->data, 
+		$event->data = str_replace( $edit_button, "", $event->data);
 	}
-
 	/**
 	 * TODO: test that this method works as expected
 	 * Make sure methods that use the metadata get the right INFO[meta]
@@ -134,12 +138,11 @@ class action_plugin_simpleperms extends DokuWiki_Action_Plugin {
 
 		global $INFO;
 		global $ID;
-
-		if ( 
-			!isset($INFO['meta']['public_rw']) || 
+		
+		if (!isset($INFO['meta']['public_rw']) || 
 			!isset($INFO['meta']['public_r']) || 
-			!isset($INFO['meta']['private']) )
-		) {
+			!isset($INFO['meta']['private']) ) 
+		{
 			# Metadata not set
 			$data = array(
 				'public_rw' => false,
@@ -149,10 +152,11 @@ class action_plugin_simpleperms extends DokuWiki_Action_Plugin {
 
 			p_set_metadata( $ID, $data );
 			$INFO['meta'] = p_get_metadata( $ID, array(), true );
+			
 		}
-
+		
 	}
-
+	
 	/**
 	 * @return true if public can edit
 	 */
@@ -193,6 +197,9 @@ class action_plugin_simpleperms extends DokuWiki_Action_Plugin {
 		return ( $INFO['meta']['creator'] == $INFO['userinfo']['name'] );
 	}
 
+
+	
+
 	/**
 	 * @return the html for the dropdown permissions selection
 	 */
@@ -202,7 +209,7 @@ class action_plugin_simpleperms extends DokuWiki_Action_Plugin {
 		$m = $INFO['meta'];
 
 		# Build a permissions matrix
-		$perms = ((int)$m['private']) . ((int)$m['public_r']) . ((int)$m['public_rw'])
+		$perms = ((int)$m['private']) . ((int)$m['public_r']) . ((int)$m['public_rw']);
 
 		# Set default text for each selected
 		list( 
@@ -210,22 +217,24 @@ class action_plugin_simpleperms extends DokuWiki_Action_Plugin {
 			$public_r_selected,
 			$public_rw_selected
 		) = array("", "", "");
-
+		
 		# Match the matrix against the 
 		switch ( $perms ) {
 			case "011":
-			case "001"
+				break;
+			case "001":
 				$public_rw_selected = " selected";
 				break;
 			case "010":
 				$public_r_selected = " selected";
 				break;
 			case "100":
+			break;
 			default:
 				$private_selected = " selected";
 				break;
 		}
-
+	
 		# note: default is private
 		$out = <<<EOF
 		<div class="summary" style="margin-right: 10px;">"
@@ -238,6 +247,7 @@ class action_plugin_simpleperms extends DokuWiki_Action_Plugin {
 EOF;
 
 		return $out;
+		
 	}
 
 	/**
@@ -273,4 +283,11 @@ EOF;
 
 		return $data;
 	}
+	
+	
+	
+	
 }
+
+	
+?>
