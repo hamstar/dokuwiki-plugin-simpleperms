@@ -16,278 +16,305 @@ if(!defined('DOKU_INC')) die();
  * need to inherit from this class
  */
 class action_plugin_simpleperms extends DokuWiki_Action_Plugin {
-	
-	
-	/**
-	* Registers a callback function for a given event
-	*/
-	function register(&$controller) {
+        
+        
+        /**
+        * Registers a callback function for a given event
+        */
+        function register(&$controller) {
 
-		# For adding simple permissions to the edit form
-		$controller->register_hook('HTML_EDITFORM_OUTPUT', 'BEFORE', $this, 'insert_dropdown', array());
+                # Restrict access to editing page
+                $controller->register_hook('ACTION_ACT_PREPROCESS', 'BEFORE', $this, 'restrict_editing', array());
+                
+                # For checking permissions before opening
+                $controller->register_hook('TPL_CONTENT_DISPLAY', 'BEFORE', $this, 'block_if_private_page', array());
 
-		# Restrict access to editing page
-		$controller->register_hook('ACTION_ACT_PREPROCESS', 'BEFORE', $this, 'restrict_editing', array());
-		
-		# For saving the simple permissions
-		$controller->register_hook('IO_WIKIPAGE_WRITE', 'AFTER', $this, 'add_metadata', array());
-		
-		# For checking permissions before opening
-		$controller->register_hook('TPL_CONTENT_DISPLAY', 'BEFORE', $this, 'block_if_private_page', array());
+                # Hide edit button where applicable
+                $controller->register_hook('TPL_CONTENT_DISPLAY', 'BEFORE', $this, 'hide_edit_button', array());
+                
+                # For adding simple permissions to the edit form
+                $controller->register_hook('HTML_EDITFORM_OUTPUT', 'BEFORE', $this, 'insert_dropdown', array());
+                
+                
+                # For saving the simple permissions
+                $controller->register_hook('IO_WIKIPAGE_WRITE', 'AFTER', $this, 'add_metadata', array());
+                
+        }
 
-		# Hide edit button where applicable
-		$controller->register_hook('TPL_CONTENT_DISPLAY', 'BEFORE', $this, 'hide_edit_button', array());
-		
-	}
+        
+        /**
+         * Insert the select element into the page
+         */
+        function insert_dropdown(&$event, $param) {
 
-	
-	/**
-	 * Insert the select element into the page
-	 */
-	function insert_dropdown(&$event, $param) {
+                # don't add perms select if not author
+                if ( !$this->_user_is_creator() )
+                        return;
 
-		/*# don't add perms select if not author
-		if ( !$this->_user_is_creator() )
-			return;
+                $pos = $event->data->findElementByAttribute('class','summary');
 
-		$pos = $event->data->findElementByAttribute('class','summary');
+                $dropdown = $this->_generate_dropdown();
+                $event->data->insertElement($pos++,$dropdown);
+                
+        }
+        
+        /**
+         * Restricts editing of pages where needed
+         */
+        function restrict_editing( &$event, $param ) {
 
-		$dropdown = $this->_generate_dropdown();
-		$event->data->insertElement($pos++,$dropdown);
-		*/
-	}
-	
-	/**
-	 * Restricts editing of pages where needed
-	 */
-	function restrict_editing( &$event, $param ) {
+                global $ACT;
 
-		global $ACT;
+                if ( $ACT != 'save' )
+                        return; # wat the?
 
-		if ( $ACT != 'save' )
-			return; # wat the?
+                # Only author can edit private pages
+                if ( $this->_private() && !$this->_user_is_creator() )
+                        $event->preventDefault();
+                        
 
-		# Only author can edit private pages
-		if ( $this->_private() && !$this->_user_is_creator() )
-			$event->preventDefault();
+                # Public can edit if they have permission
+                if ( !$this->_public_can_edit() )
+                        $event->preventDefault();
+        }
 
-		# Public can edit if they have permission
-		if ( !$this->_public_can_edit() )
-			$event->preventDefault();
-	}
+        /**
+         * Adds the simpleperm metadata to the page
+         * Ensures only the author can do this
+         */
+        function add_metadata( &$event, $param ) {
 
-	/**
-	 * Adds the simpleperm metadata to the page
-	 * Ensures only the author can do this
-	 */
-	function add_metadata( &$event, $param ) {
+                global $ACT;
+                global $INPUT;
+                global $ID;
 
-		global $ACT;
-		global $INPUT;
-		global $ID;
+                # Check it is a save operation
+                if ( $ACT != "save" )
+                        return; # what the?
 
-		# Check it is a save operation
-		if ( $ACT != "save" )
-			return; # what the?
+                # don't add perms if not author
+                if ( !$this->_user_is_creator() )
+                        return;
 
-		# don't add perms if not author
-		if ( !$this->_user_is_creator() )
-			return;
+                # Check if the simpleperm value was given in the request
+                $inputs = strpos($INPUT->post, "simpleperm");
+                if ( !$inputs )
+                //if ( !$INPUT->post->has_str('simpleperm') )
+                        return; # hmmm.. select must not have gone on the page
 
-		# Check if the simpleperm value was given in the request
-		if ( !$INPUT->post->has('simpleperm') )
-			return; # hmmm.. select must not have gone on the page
+                # Generate and set the metadata
+                $data = $this->_generate_metadata( $INPUT->post->int('simpleperm') );
+                p_set_metadata( $ID, $data );
+                echo "DUMP";
+                var_dump($INPUT->post->int('simpleperm'));
+        }
+        
+        /**
+         * Doesn't allow the page to be viewed if its private
+         */
+        function block_if_private_page( &$event, $param ) {
+        
+        
+                if ( !$this->_page_exists() ) {
+                        return;
+                }
+        
+                # Its a private page and user not author, block access
+                if ( $this->_private() && !$this->_user_is_creator() ) {
+                $event->preventDefault();
+                        echo "<h1 class='sectionedit1'><a name='private' id='private'><img width='100px' height='100px' src='http://kinlane-productions.s3.amazonaws.com/api-evangelist/error.png'><strong> This is a private page</strong></a></h1>";
+                        
+                        }
+                        
+                global $INFO;
+                var_dump($INFO['meta']);
+        }
 
-		# Generate and set the metadata
-		$data = $this->_generate_metadata( $INPUT->post->int('simpleperm') );
-		p_set_metadata( $ID, $data );
-	}
-	
-	/**
-	 * Doesn't allow the page to be viewed if its private
-	 */
-	function block_if_private_page( &$event, $param ) {
+        /**
+         * Hides the edit button if the user only has read perms
+         */
+        function hide_edit_button( &$event, $param ) {
 
-		# Its a private page and user not author, block access
-		if ( $this->_private() && !$this->_user_is_creator() )
-			$this->event->preventDefault();
-	}
+                $this->_check_metadata_exists(); # this should modify $INFO if it doesn't already have simpleperm metadata
+                
+                if ( $this->_user_is_creator() )
+                        return;
 
-	/**
-	 * Hides the edit button if the user only has read perms
-	 */
-	function hide_edit_button( &$event, $param ) {
+                if ( $this->_public_can_edit() )
+                        return;
 
-		$this->_check_metadata_exists(); # this should modify $INFO if it doesn't already have simpleperm metadata
-		
-		if ( $this->_user_is_creator() )
-			return;
+                $edit_button = '<input type="submit" value="Edit this page" class="button" accesskey="e" title="Edit this page [E]" />';
+                $event->data = str_replace( $edit_button, "", $event->data);
+        }
+        /**
+         * TODO: test that this method works as expected
+         * Make sure methods that use the metadata get the right INFO[meta]
+         * array after calling this on a previously unrestricted page.
+         */ 
+        function _check_metadata_exists() {
 
-		if ( $this->_public_can_edit() )
-			return;
+                global $INFO;
+                global $ID;
+                
+                if (!isset($INFO['meta']['public_rw']) || 
+                        !isset($INFO['meta']['public_r']) || 
+                        !isset($INFO['meta']['private']) ) 
+                {
+                        # Metadata not set
+                        $data = array(
+                                'public_rw' => false,
+                                'public_r' => false,
+                                'private' => true
+                        );
 
-		$edit_button = '<input type="submit" value="Edit this page" class="button" accesskey="e" title="Edit this page [E]" />';
-		$event->data = str_replace( $edit_button, "", $event->data);
-	}
-	/**
-	 * TODO: test that this method works as expected
-	 * Make sure methods that use the metadata get the right INFO[meta]
-	 * array after calling this on a previously unrestricted page
-	 */
-	function _check_metadata_exists() {
+                        p_set_metadata( $ID, $data );
+                        $INFO['meta'] = p_get_metadata( $ID, array(), true );
+                        
+                }
+                
+        }
+        
+        /**
+         * @return true if public can edit
+         */
+        function _public_can_edit() {
 
-		global $INFO;
-		global $ID;
-		
-		if (!isset($INFO['meta']['public_rw']) || 
-			!isset($INFO['meta']['public_r']) || 
-			!isset($INFO['meta']['private']) ) 
-		{
-			# Metadata not set
-			$data = array(
-				'public_rw' => false,
-				'public_r' => false,
-				'private' => true
-			);
+                global $INFO;
 
-			p_set_metadata( $ID, $data );
-			$INFO['meta'] = p_get_metadata( $ID, array(), true );
-			
-		}
-		
-	}
-	
-	/**
-	 * @return true if public can edit
-	 */
-	function _public_can_edit() {
+                return $INFO['meta']['public_rw'];
+        }
 
-		global $INFO;
+        /**
+         * @return true if public can read
+         */
+        function _public_can_read() {
 
-		return $INFO['meta']['public_rw'];
-	}
+                global $INFO;
 
-	/**
-	 * @return true if public can read
-	 */
-	function _public_can_read() {
+                return $INFO['meta']['public_r'];
+        }
 
-		global $INFO;
+        /**
+         * @return true if private
+         */
+        function _private() {
 
-		return $INFO['meta']['public_r'];
-	}
+                global $INFO;
 
-	/**
-	 * @return true if private
-	 */
-	function _private() {
+                return $INFO['meta']['private'];
+        }
 
-		global $INFO;
+        /**
+         * @return true if the current user is creator
+         */
+        function _user_is_creator() {
 
-		return $INFO['meta']['private'];
-	}
+                global $INFO;
 
-	/**
-	 * @return true if the current user is creator
-	 */
-	function _user_is_creator() {
+                return ( $INFO['meta']['creator'] == $INFO['userinfo']['name'] );
+        }
 
-		global $INFO;
+        /**
+        * @return true if page exists
+        */
+        function _page_exists() {
+        
+                global $INFO;
+                
+                return $INFO['exists'];
+        }
 
-		return ( $INFO['meta']['creator'] == $INFO['userinfo']['name'] );
-	}
+        
 
+        /**
+         * @return the html for the dropdown permissions selection
+         */
+        function _generate_dropdown() {
 
-	
+                global $INFO;
+                $m = $INFO['meta'];
 
-	/**
-	 * @return the html for the dropdown permissions selection
-	 */
-	function _generate_dropdown() {
+                # Build a permissions matrix
+                $perms = ((int)$m['private']) . ((int)$m['public_r']) . ((int)$m['public_rw']);
 
-		global $INFO;
-		$m = $INFO['meta'];
-
-		# Build a permissions matrix
-		$perms = ((int)$m['private']) . ((int)$m['public_r']) . ((int)$m['public_rw']);
-
-		# Set default text for each selected
-		list( 
-			$private_selected,
-			$public_r_selected,
-			$public_rw_selected
-		) = array("", "", "");
-		
-		# Match the matrix against the 
-		switch ( $perms ) {
-			case "011":
-				break;
-			case "001":
-				$public_rw_selected = " selected";
-				break;
-			case "010":
-				$public_r_selected = " selected";
-				break;
-			case "100":
-			break;
-			default:
-				$private_selected = " selected";
-				break;
-		}
-	
-		# note: default is private
-		$out = <<<EOF
-		<div class="summary" style="margin-right: 10px;">"
-			<span>Permissions: <select name="simpleperm">
-				<option value="-1"$private_selected>Private</option>
-				<option value="0"$public_r_selected>Public Read</option>
-				<option value="1"$public_rw_selected>Public Edit</option>
-			</select></span>
-		</div>
+                # Set default text for each selected
+                list( 
+                        $private_selected,
+                        $public_r_selected,
+                        $public_rw_selected
+                ) = array("", "", "");
+                
+                # Match the matrix against the 
+                switch ( $perms ) {
+                        case "011":
+                                break;
+                        case "001":
+                                $public_rw_selected = " selected";
+                                break;
+                        case "010":
+                                $public_r_selected = " selected";
+                                break;
+                        case "100":
+                            $private_selected = " selected";
+                        break;
+                        default:
+                                $private_selected = " selected";
+                                break;
+                }
+        
+                # note: default is private
+                $out = <<<EOF
+                <div class="summary" style="margin-right: 10px;">
+                        <span>Permissions: <select name="simpleperm">
+                                <option value="-1"$private_selected>Private</option>
+                                <option value="0"$public_r_selected>Public Read</option>
+                                <option value="1"$public_rw_selected>Public Edit</option>
+                        </select></span>
+                </div>
 EOF;
 
-		return $out;
-		
-	}
+                return $out;
+                
+        }
 
-	/**
-	 * @return array of metadata describing the simple permissions
-	 */
-	function _generate_metadata( $sp ) {
-		
-		# set the perms
-		switch ( $sp ) {
-		case 0: # public read 010/2
-			$data = array(
-				'public_rw' => false,
-				'public_r' => true,
-				'private' => false
-			);
-			break;
-		case 1: # public edit 011/3
-			$data = array(
-				'public_rw' => true,
-				'public_r' => true,
-				'private' => false
-			);
-			break;
-		case -1: # private 100/4
-		default:
-			$data = array(
-				'public_rw' => false,
-				'public_r' => false,
-				'private' => true
-			);
-			break;
-		}
+        /**
+         * @return array of metadata describing the simple permissions
+         */
+        function _generate_metadata( $sp ) {
+                
+                # set the perms
+                switch ( $sp ) {
+                case 0: # public read 010/2
+                        $data = array(
+                                'public_rw' => false,
+                                'public_r' => true,
+                                'private' => false
+                        );
+                        break;
+                case 1: # public edit 011/3
+                        $data = array(
+                                'public_rw' => true,
+                                'public_r' => true,
+                                'private' => false
+                        );
+                        break;
+                case -1: # private 100/4
+                default:
+                        $data = array(
+                                'public_rw' => false,
+                                'public_r' => false,
+                                'private' => true
+                        );
+                        break;
+                }
 
-		return $data;
-	}
-	
-	
-	
-	
+                return $data;
+        }
+        
+        
+        
+        
 }
 
-	
+        
 ?>
