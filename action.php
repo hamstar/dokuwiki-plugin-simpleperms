@@ -147,6 +147,7 @@ class action_plugin_simpleperms extends DokuWiki_Action_Plugin
      */
     function hide_edit_button(&$event, $param)
     {
+ 
         $this->_check_metadata_exists(); # this should modify $INFO if it doesn't already have simpleperm metadata
         
         if ($this->_user_is_creator())
@@ -157,12 +158,14 @@ class action_plugin_simpleperms extends DokuWiki_Action_Plugin
 //        $pos = $event->data->findElementByAttribute('class', 'edit');
 //        $event->data->replaceElement($pos,"HELLO");
         
-         $re1='(<[(edit)^>]+>)';     # Tag 1
-         $re2='((edit))';     # Word 1
-         preg_replace("/".$re1.$re2."/is","",$event->data);
-
-        $edit_button = '<input type="submit" value="Edit this page" class="button" accesskey="e" title="Edit this page [E]" />';
-        $event->data = str_replace($edit_button, "", $event->data);
+         $out = <<<EOF
+		<script>
+                     jQuery(document).ready(function(){
+                        jQuery('.edit').parent("li").remove();
+                        });
+                    </script>
+EOF;
+  echo $out;
     }
     /**
      * TODO: test that this method works as expected
