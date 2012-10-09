@@ -19,8 +19,8 @@ if (!defined('DOKU_INC'))
 class action_plugin_simpleperms extends DokuWiki_Action_Plugin
 {
     
-    public static $PERMISSIONS = array("private" => -1, "public_rw" => 0, "public_r" => 1);
-    public static $PERMISSIONS_DESC = array(-1 => "private", 0 => "public_rw", 1 => "public_r");
+    public static $PERMISSIONS = array("private" => -1, "public_r" => 0, "public_rw" => 1);
+    public static $PERMISSIONS_DESC = array(-1 => "private", 0 => "public_r", 1 => "public_rw");
     //public static  $PERMISSIOS_DESC = array(array_flip($PERMISSIONS)); //This doesn't seem to work
    
     
@@ -78,13 +78,19 @@ class action_plugin_simpleperms extends DokuWiki_Action_Plugin
             return; # wat the?
         
         # Only author can edit private pages
-        if ($this->_private() && !$this->_user_is_creator())
+        if ($this->_private() && !$this->_user_is_creator()) {
             $event->preventDefault();
+            echo "Restriced 1";
+        }
+            
         
         
         # Public can edit if they have permission
         if (!$this->_public_can_edit())
+        {
             $event->preventDefault();
+            echo "Restriced 2";
+        }
     }
     
     /**
@@ -123,8 +129,6 @@ class action_plugin_simpleperms extends DokuWiki_Action_Plugin
     {
         global $INFO;
         
-        var_dump($INFO['meta']);
-        
         if (!$this->_page_exists()) {
             return;
         }
@@ -147,10 +151,16 @@ class action_plugin_simpleperms extends DokuWiki_Action_Plugin
         
         if ($this->_user_is_creator())
             return;
-        
         if ($this->_public_can_edit())
             return;
         
+//        $pos = $event->data->findElementByAttribute('class', 'edit');
+//        $event->data->replaceElement($pos,"HELLO");
+        
+         $re1='(<[(edit)^>]+>)';     # Tag 1
+         $re2='((edit))';     # Word 1
+         preg_replace("/".$re1.$re2."/is","",$event->data);
+
         $edit_button = '<input type="submit" value="Edit this page" class="button" accesskey="e" title="Edit this page [E]" />';
         $event->data = str_replace($edit_button, "", $event->data);
     }
