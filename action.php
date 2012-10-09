@@ -32,7 +32,7 @@ class action_plugin_simpleperms extends DokuWiki_Action_Plugin
          
         
         # Restrict access to editing page
-        $controller->register_hook('ACTION_ACT_PREPROCESS', 'BEFORE', $this, 'restrict_editing', array());
+        $controller->register_hook('ACTION_ACT_PREPROCESS', 'AFTER', $this, 'restrict_editing', array());
         
         # For checking permissions before opening
         $controller->register_hook('TPL_CONTENT_DISPLAY', 'BEFORE', $this, 'block_if_private_page', array());
