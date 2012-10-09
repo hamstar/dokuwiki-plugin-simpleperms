@@ -7,6 +7,7 @@ error_reporting(E_ERROR | E_WARNING | E_PARSE);
  * @license    WTFPL 2 (http://sam.zoy.org/wtfpl/)
  * @author     Robert Mcleod <hamstar@telescum.co.nz>
  * @modified   Bhavic Patel <bhavic@hides.me>
+ *
  */
 // must be run within Dokuwiki
 if (!defined('DOKU_INC'))
@@ -129,6 +130,7 @@ class action_plugin_simpleperms extends DokuWiki_Action_Plugin
     {
         global $INFO;
         
+		#If page doesn't exist, no need to block it.
         if (!$this->_page_exists()) {
             return;
         }
@@ -155,9 +157,7 @@ class action_plugin_simpleperms extends DokuWiki_Action_Plugin
         if ($this->_public_can_edit())
             return;
         
-//        $pos = $event->data->findElementByAttribute('class', 'edit');
-//        $event->data->replaceElement($pos,"HELLO");
-        
+		#Using JQuery to remove the edit button for now. It may be better to do it via PHP.
          $out = <<<EOF
 		<script>
                      jQuery(document).ready(function(){
@@ -168,7 +168,6 @@ EOF;
   echo $out;
     }
     /**
-     * TODO: test that this method works as expected
      * Make sure methods that use the metadata get the right INFO[meta]
      * array after calling this on a previously unrestricted page
      */
@@ -177,6 +176,7 @@ EOF;
         global $INFO;
         global $ID;
         
+		#Don't insert metadata on non-existant pages.
         if (!isset($INFO['meta']['permission']) && $this->_page_exists()) {
             # Metadata not set
             $data = array(
@@ -186,7 +186,6 @@ EOF;
             
             p_set_metadata($ID, $data);
             $INFO['meta'] = p_get_metadata($ID, array(), true);
-            echo "META WAS ADDED11111111111";
         }
         
         
@@ -307,11 +306,10 @@ EOF;
             case 1: # public edit 
                 $data["permission"] = '1';
                 break;
-            default:
+            default: #Private
                 $data["permission"] = '-1';
                 break;
         }
-        //$data["permission"] = '66';
         
         return $data;
     }
