@@ -1,5 +1,5 @@
 <?php
-error_reporting(E_ERROR | E_WARNING | E_PARSE);
+//error_reporting(E_ERROR | E_WARNING | E_PARSE);
 /**
  * Proof of concept plugin for simple per page  permissions
  * in dokuwiki
@@ -22,7 +22,11 @@ class action_plugin_simpleperms extends DokuWiki_Action_Plugin
     
     public static $PERMISSIONS = array("private" => -1, "public_r" => 0, "public_rw" => 1);
     public static $PERMISSIONS_DESC = array(-1 => "private", 0 => "public_r", 1 => "public_rw");
-    //public static  $PERMISSIOS_DESC = array(array_flip($PERMISSIONS)); //This doesn't seem to work
+	//public static  $PERMISSIOS_DESC = array(array_flip($PERMISSIONS)); //This doesn't seem to work
+	
+	public static $PAGES_TO_IGNORE = array("admin", "profile"); #It will ignore these if in $ACT
+	
+    
    
     
     /**
@@ -217,6 +221,10 @@ EOF;
     function _private()
     {
         global $INFO;
+		global $ACT;
+		
+		if ( in_array($ACT,self::$PAGES_TO_IGNORE) ) #Shouldn't block admin page
+		return;
         
         return ($INFO['meta']['permission'] == self::$PERMISSIONS["private"]);
     }
