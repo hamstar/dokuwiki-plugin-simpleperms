@@ -20,8 +20,8 @@ if (!defined('DOKU_INC'))
 class action_plugin_simpleperms extends DokuWiki_Action_Plugin
 {
     
-    public static $PERMISSIONS = array("private" => -1, "public_r" => 0, "public_rw" => 1);
-    public static $PERMISSIONS_DESC = array(-1 => "private", 0 => "public_r", 1 => "public_rw");
+    public static $PERMISSIONS = array("private" => -1, "other_r" => 0, "other_rw" => 1);
+    public static $PERMISSIONS_DESC = array(-1 => "private", 0 => "other_r", 1 => "other_rw");
 	//public static  $PERMISSIOS_DESC = array(array_flip($PERMISSIONS)); //This doesn't seem to work
 	
 	public static $PAGES_TO_IGNORE = array("admin", "profile"); #It will ignore these if in $ACT
@@ -202,7 +202,7 @@ EOF;
     {
         global $INFO;
         
-        return ($INFO['meta']['permission'] == self::$PERMISSIONS["public_rw"]);
+        return ($INFO['meta']['permission'] == self::$PERMISSIONS["other_rw"]);
     }
     
     /**
@@ -212,7 +212,7 @@ EOF;
     {
         global $INFO;
         
-        return ($INFO['meta']['permission'] == self::$PERMISSIONS["public_r"]);
+        return ($INFO['meta']['permission'] == self::$PERMISSIONS["other_r"]);
     }
     
     /**
@@ -287,8 +287,8 @@ EOF;
 		<div class="summary" style="margin-right: 10px;">
 			<span>Permissions: <select name="simpleperm">
 				<option value="-1"$private_selected>Private</option>
-				<option value="0"$public_r_selected>Public Read</option>
-				<option value="1"$public_rw_selected>Public Edit</option>
+				<option value="0"$public_r_selected>Readable</option>
+				<option value="1"$public_rw_selected>Writeable</option>
 			</select></span>
 		</div>
 EOF;
